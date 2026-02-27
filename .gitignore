@@ -1,0 +1,38 @@
+# Rust build artifacts
+/target
+Cargo.lock
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files (API keys, secrets)
+.env
+.env.*
+!.env.example
+
+# Secret files
+*.key
+*.pem
+*.crt
+*.p12
+secrets/
+credentials/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Test artifacts
+*.log
+/tmp/
+/temp/
+
+# Distribution
+*.tar.gz
+*.zip
+cli-assistant-dist/
