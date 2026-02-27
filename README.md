@@ -29,20 +29,28 @@ This is a faster, more reliable alternative to the Python version:
 - Rust toolchain (install from [rustup.rs](https://rustup.rs))
 - OpenAI API key
 
-### Quick Install
+### One-Command Install ⚡ (Recommended)
 
 ```bash
-# Clone or download this repository
-cd cli-assistant-rust
+curl -fsSL https://raw.githubusercontent.com/shaktiman101/cli-assistant/main/remote-install.sh | bash
+```
+
+This will:
+1. Download the repository
+2. Build the binary in release mode
+3. Install to `~/.local/bin/cli-assistant`
+4. Set up shell integration in your `.bashrc` or `.zshrc`
+
+### Quick Install (from cloned repo)
+
+```bash
+# Clone the repository
+git clone https://github.com/shaktiman101/cli-assistant.git
+cd cli-assistant
 
 # Run the installer
 ./install.sh
 ```
-
-The installer will:
-1. Build the binary in release mode
-2. Copy it to `~/.local/bin/cli-assistant`
-3. Set up shell integration in your `.bashrc` or `.zshrc`
 
 ### Manual Installation
 
