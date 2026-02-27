@@ -5,6 +5,7 @@ use anyhow::Result;
 pub struct ParsedResponse {
     pub explanation: String,
     pub command: String,
+    pub is_explanation_only: bool,
 }
 
 /// Parse the LLM response to extract EXPLANATION and COMMAND sections
@@ -50,12 +51,19 @@ pub fn parse_response(response: &str) -> Result<ParsedResponse> {
     // Clean up command - remove markdown code blocks if present
     command = clean_markdown_code_blocks(&command);
 
-    // If parsing failed, try to extract something useful
-    if command.is_empty() {
+    // Check if this is an explanation-only response
+    let is_explanation_only = command.eq_ignore_ascii_case("n/a")
+        || command.eq_ignore_ascii_case("none")
+        || command.eq_ignore_ascii_case("same")
+        || command.is_empty();
+
+    // If parsing failed and not explanation-only, try to extract something useful
+    if command.is_empty() && !is_explanation_only {
         command = extract_command_from_code_blocks(response);
     }
 
-    if command.is_empty() {
+    // For explanation-only mode, command can be empty
+    if command.is_empty() && !is_explanation_only {
         anyhow::bail!(
             "Could not extract command from response. Response:\n{}",
             response
@@ -70,6 +78,7 @@ pub fn parse_response(response: &str) -> Result<ParsedResponse> {
     Ok(ParsedResponse {
         explanation,
         command,
+        is_explanation_only,
     })
 }
 

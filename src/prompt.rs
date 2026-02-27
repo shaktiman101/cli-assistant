@@ -1,9 +1,72 @@
 use crate::shell::{CommandContext, ShellInfo};
 
+/// Mode of operation for the assistant
+#[derive(Debug, Clone, PartialEq)]
+pub enum AssistantMode {
+    /// Fix a failed command (has error)
+    Fix,
+    /// Explain what a command does
+    Explain,
+    /// Improve or modify a working command
+    Improve,
+}
+
+/// Detect the mode based on context
+pub fn detect_mode(context: &CommandContext) -> AssistantMode {
+    // If there's an error (exit code != 0 or stderr present), it's Fix mode
+    if context.exit_code.is_some() && context.exit_code != Some(0) {
+        return AssistantMode::Fix;
+    }
+
+    if let Some(ref stderr) = context.stderr {
+        if !stderr.trim().is_empty() {
+            return AssistantMode::Fix;
+        }
+    }
+
+    // If there's a user prompt, analyze it to determine intent
+    if let Some(ref prompt) = context.user_prompt {
+        let prompt_lower = prompt.to_lowercase();
+
+        // Question words indicate Explain mode
+        let question_indicators = [
+            "what", "how", "why", "explain", "meaning", "mean", "does",
+            "understand", "tell me", "show me", "describe", "purpose"
+        ];
+
+        if question_indicators.iter().any(|&word| prompt_lower.contains(word)) {
+            return AssistantMode::Explain;
+        }
+
+        // Improvement words indicate Improve mode
+        let improvement_indicators = [
+            "make", "change", "modify", "improve", "better", "add",
+            "instead", "alternative", "faster", "safer", "simpler"
+        ];
+
+        if improvement_indicators.iter().any(|&word| prompt_lower.contains(word)) {
+            return AssistantMode::Improve;
+        }
+    }
+
+    // Default: if command succeeded without user prompt, explain it
+    AssistantMode::Explain
+}
+
 /// Create a structured prompt for the LLM
-pub fn create_prompt(context: &CommandContext, shell_info: &ShellInfo) -> String {
+pub fn create_prompt(context: &CommandContext, shell_info: &ShellInfo, mode_override: Option<AssistantMode>) -> String {
+    // Use override if provided, otherwise detect automatically
+    let mode = mode_override.unwrap_or_else(|| detect_mode(context));
+
+    // System prompt based on mode
+    let system_prompt = match mode {
+        AssistantMode::Fix => "You are a helpful command-line assistant. Your task is to analyze a failed command and provide a fixed version with explanation.",
+        AssistantMode::Explain => "You are a helpful command-line assistant. Your task is to explain what a command does, breaking down its components and purpose.",
+        AssistantMode::Improve => "You are a helpful command-line assistant. Your task is to improve or modify a command based on the user's request.",
+    };
+
     let mut parts = vec![
-        "You are a helpful command-line assistant. Your task is to explain a bash/sh type commands or analyze a failed or problematic command and provide a fixed version.".to_string(),
+        system_prompt.to_string(),
         String::new(),
         "## Context".to_string(),
         format!("Shell: {}", shell_info.shell),
@@ -38,24 +101,65 @@ pub fn create_prompt(context: &CommandContext, shell_info: &ShellInfo) -> String
         }
     }
 
-    // Add response format instructions
-    parts.extend(vec![
-        String::new(),
-        "## Your Response Format".to_string(),
-        "Please provide your response in the following format:".to_string(),
-        String::new(),
-        "EXPLANATION:".to_string(),
-        "[Brief explanation of what went wrong and how to fix it]".to_string(),
-        String::new(),
-        "COMMAND:".to_string(),
-        "[The corrected command to execute]".to_string(),
-        String::new(),
-        "Important:".to_string(),
-        "- Only output the EXPLANATION and COMMAND sections".to_string(),
-        "- The COMMAND section should contain ONLY the command to execute, nothing else".to_string(),
-        "- Keep the explanation concise and focused".to_string(),
-        "- Make sure the command is safe to execute".to_string(),
-    ]);
+    // Add response format instructions based on mode
+    match mode {
+        AssistantMode::Fix => {
+            parts.extend(vec![
+                String::new(),
+                "## Your Response Format".to_string(),
+                "Please provide your response in the following format:".to_string(),
+                String::new(),
+                "EXPLANATION:".to_string(),
+                "[Brief explanation of what went wrong and how to fix it]".to_string(),
+                String::new(),
+                "COMMAND:".to_string(),
+                "[The corrected command to execute]".to_string(),
+                String::new(),
+                "Important:".to_string(),
+                "- Only output the EXPLANATION and COMMAND sections".to_string(),
+                "- The COMMAND section should contain ONLY the command to execute, nothing else".to_string(),
+                "- Keep the explanation concise and focused".to_string(),
+                "- Make sure the command is safe to execute".to_string(),
+            ]);
+        }
+        AssistantMode::Explain => {
+            parts.extend(vec![
+                String::new(),
+                "## Your Response Format".to_string(),
+                "Please provide your response in the following format:".to_string(),
+                String::new(),
+                "EXPLANATION:".to_string(),
+                "[Detailed explanation of what the command does, breaking down each part]".to_string(),
+                String::new(),
+                "COMMAND:".to_string(),
+                "[The same command, or 'N/A' if just explaining]".to_string(),
+                String::new(),
+                "Important:".to_string(),
+                "- Focus on explaining clearly and comprehensively".to_string(),
+                "- Break down complex commands into understandable parts".to_string(),
+                "- If the command is the same, you can put 'N/A' in COMMAND section".to_string(),
+            ]);
+        }
+        AssistantMode::Improve => {
+            parts.extend(vec![
+                String::new(),
+                "## Your Response Format".to_string(),
+                "Please provide your response in the following format:".to_string(),
+                String::new(),
+                "EXPLANATION:".to_string(),
+                "[Explanation of the improvements made]".to_string(),
+                String::new(),
+                "COMMAND:".to_string(),
+                "[The improved command]".to_string(),
+                String::new(),
+                "Important:".to_string(),
+                "- Only output the EXPLANATION and COMMAND sections".to_string(),
+                "- The COMMAND section should contain the improved command".to_string(),
+                "- Explain what changes were made and why".to_string(),
+                "- Make sure the command is safe to execute".to_string(),
+            ]);
+        }
+    }
 
     parts.join("\n")
 }
@@ -79,7 +183,7 @@ mod tests {
             cwd: "/home/user".to_string(),
         };
 
-        let prompt = create_prompt(&context, &shell_info);
+        let prompt = create_prompt(&context, &shell_info, None);
 
         assert!(prompt.contains("ls /nonexistent"));
         assert!(prompt.contains("Exit code: 2"));
@@ -103,7 +207,7 @@ mod tests {
             cwd: "/Users/user".to_string(),
         };
 
-        let prompt = create_prompt(&context, &shell_info);
+        let prompt = create_prompt(&context, &shell_info, None);
 
         assert!(prompt.contains("ls /tmp"));
         assert!(prompt.contains("make it recursive"));
@@ -125,11 +229,44 @@ mod tests {
             cwd: "/home/user".to_string(),
         };
 
-        let prompt = create_prompt(&context, &shell_info);
+        let prompt = create_prompt(&context, &shell_info, None);
 
         assert!(prompt.contains("pwd"));
         assert!(!prompt.contains("Exit code"));
         assert!(!prompt.contains("## Error Output"));
         assert!(!prompt.contains("## User Request"));
+    }
+
+    #[test]
+    fn test_mode_detection_fix() {
+        let context = CommandContext {
+            command: "ls".to_string(),
+            exit_code: Some(2),
+            stderr: Some("error".to_string()),
+            user_prompt: None,
+        };
+        assert_eq!(detect_mode(&context), AssistantMode::Fix);
+    }
+
+    #[test]
+    fn test_mode_detection_explain() {
+        let context = CommandContext {
+            command: "ls".to_string(),
+            exit_code: None,
+            stderr: None,
+            user_prompt: Some("what does this do?".to_string()),
+        };
+        assert_eq!(detect_mode(&context), AssistantMode::Explain);
+    }
+
+    #[test]
+    fn test_mode_detection_improve() {
+        let context = CommandContext {
+            command: "ls".to_string(),
+            exit_code: None,
+            stderr: None,
+            user_prompt: Some("make it better".to_string()),
+        };
+        assert_eq!(detect_mode(&context), AssistantMode::Improve);
     }
 }

@@ -1,10 +1,10 @@
 [package]
-name = "cli-assistant"
-version = "0.2.0"
+name = "fixit"
+version = "0.3.0"
 edition = "2021"
 
 [[bin]]
-name = "cli-assistant"
+name = "fixit"
 path = "src/main.rs"
 
 [dependencies]

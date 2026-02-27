@@ -1,7 +1,7 @@
 use colored::*;
 
 /// Display a section with a title and content
-fn show_section(title: &str, content: &str, color: Color) {
+pub fn show_section(title: &str, content: &str, color: Color) {
     let separator = "─".repeat(60);
 
     println!();
@@ -31,14 +31,23 @@ pub fn show_suggestion(command: &str) {
 pub fn show_complete_suggestion(
     original_command: Option<&str>,
     explanation: &str,
-    suggested_command: &str,
+    suggested_command: Option<&str>,
 ) {
     if let Some(cmd) = original_command {
-        show_original_command(cmd);
+        // Only show as "Original Command" if there's an error/fix mode
+        if suggested_command.is_some() {
+            show_original_command(cmd);
+        } else {
+            // For explain mode, show as "Command"
+            show_section("📝 Command", cmd, Color::Cyan);
+        }
     }
 
     show_explanation(explanation);
-    show_suggestion(suggested_command);
+
+    if let Some(cmd) = suggested_command {
+        show_suggestion(cmd);
+    }
 }
 
 /// Display a success message

@@ -1,26 +1,36 @@
-# CLI Assistant (Rust)
+# Fixit 🔧
 
-AI-powered command-line assistant that fixes failed commands and explains errors using OpenAI's GPT models.
+AI-powered command-line assistant that **fixes**, **explains**, and **improves** your shell commands using OpenAI's GPT models.
 
-**Fast, reliable, and easy to use** - built in Rust for maximum performance.
+**Fast, intelligent, and easy to use** - built in Rust for maximum performance.
 
-## Why Rust Version?
+## Why Fixit?
 
-This is a faster, more reliable alternative to the Python version:
-
-- **⚡ 3-6x faster startup** (~50-100ms vs ~300ms)
-- **📦 Single binary** - no Python runtime required
-- **🚀 Smaller footprint** - ~3-5MB binary vs ~50MB Python + dependencies
-- **💪 Type-safe** - catch bugs at compile time
-- **🎯 Simple** - focused on OpenAI models only
+- **⚡ Lightning fast** - ~50-100ms startup
+- **📦 Single binary** - no dependencies
+- **🚀 Tiny footprint** - ~3-5MB binary
+- **🎯 Three modes** - Fix, Explain, or Improve
+- **🧠 Smart detection** - Automatically understands your intent
 
 ## Features
 
-- 🔍 **Automatic error detection** - captures failed commands and errors
-- 🤖 **AI-powered suggestions** - uses GPT to understand and fix issues
-- 💬 **Context-aware** - includes shell type, OS, working directory
-- ✅ **Safe execution** - always asks for confirmation before running commands
-- 🎨 **Color-coded output** - easy to read terminal UI
+### 🔧 **Fix Mode** - Fix Failed Commands
+- Automatic error detection
+- AI-powered error analysis
+- Suggests corrected commands
+- Safe execution with confirmation
+
+### 📖 **Explain Mode** - Understand Commands
+- Break down complex commands
+- Explain what each part does
+- Learn command-line patterns
+- No execution - just learning
+
+### ⚡ **Improve Mode** - Make Commands Better
+- Suggest improvements
+- Add useful flags
+- Optimize performance
+- Enhance safety
 
 ## Installation
 
@@ -38,7 +48,7 @@ curl -fsSL https://raw.githubusercontent.com/shaktiman101/cli-assistant/main/rem
 This will:
 1. Download the repository
 2. Build the binary in release mode
-3. Install to `~/.local/bin/cli-assistant`
+3. Install to `~/.local/bin/fixit`
 4. Set up shell integration in your `.bashrc` or `.zshrc`
 
 ### Quick Install (from cloned repo)
@@ -59,10 +69,10 @@ cd cli-assistant
 cargo build --release
 
 # Copy to a directory in your PATH
-cp target/release/cli-assistant ~/.local/bin/
+cp target/release/fixit ~/.local/bin/
 
 # Add shell integration to your shell config
-echo 'source ~/.local/cli-assistant/shell_integration.sh' >> ~/.bashrc  # or ~/.zshrc
+echo 'source ~/.local/fixit/shell_integration.sh' >> ~/.bashrc  # or ~/.zshrc
 ```
 
 ## Configuration
@@ -86,56 +96,115 @@ echo 'export OPENAI_API_KEY="sk-..."' >> ~/.bashrc  # or ~/.zshrc
 Change the default model (default: `gpt-4o`):
 
 ```bash
-export CLI_ASSISTANT_MODEL="gpt-3.5-turbo"
+export FIXIT_MODEL="gpt-3.5-turbo"
 ```
 
 Adjust API timeout (default: 30 seconds):
 
 ```bash
-export CLI_ASSISTANT_TIMEOUT="60"
+export FIXIT_TIMEOUT="60"
 ```
 
 ## Usage
 
-### Basic Usage
+Fixit has **smart mode detection** that automatically understands whether you want to:
+- 🔧 **Fix** a failed command
+- 📖 **Explain** what a command does
+- ⚡ **Improve** or modify a command
 
-Just run a command that fails, then type `fix`:
+### Mode 1: Fix Failed Commands
+
+Just run a command that fails, then type `fixit`:
 
 ```bash
 $ ls /nonexistent
 ls: cannot access '/nonexistent': No such file or directory
 
-$ fix
+$ fixit
 ```
 
 The assistant will:
 1. Analyze the failed command and error
-2. Provide an explanation
+2. Provide an explanation of what went wrong
 3. Suggest a corrected command
 4. Ask for confirmation before executing
 
-### With Context
+### Mode 2: Explain Commands
 
-Provide additional context to help the AI:
+Understand what any command does:
 
 ```bash
-$ fix "I want to list files recursively"
+$ find . -type f -mtime -7 -exec grep -l 'pattern' {} \;
+$ fixit "what does this command do?"
 ```
+
+Or:
+
+```bash
+$ tar -xzf archive.tar.gz
+$ fixit "explain each flag"
+```
+
+Or use the explicit flag:
+
+```bash
+$ fixit --explain
+```
+
+The assistant will:
+1. Break down the command into parts
+2. Explain what each component does
+3. Describe the overall purpose
+4. **No execution** - just explanation
+
+### Mode 3: Improve Commands
+
+Make commands better or modify them:
+
+```bash
+$ ls -la
+$ fixit "make this show human-readable file sizes"
+```
+
+Or:
+
+```bash
+$ grep -r "pattern" .
+$ fixit "make it faster and ignore .git folders"
+```
+
+Or use the explicit flag:
+
+```bash
+$ fixit --improve "make it faster"
+```
+
+The assistant will:
+1. Understand your request
+2. Provide an improved version
+3. Explain what changed and why
+4. Ask for confirmation before executing
 
 ### Command-Line Options
 
 ```bash
 # Show help
-cli-assistant --help
+fixit --help
 
 # Show version
-cli-assistant --version
+fixit --version
+
+# Force explain mode (just explain, don't execute)
+fixit --explain
+
+# Force improve mode (suggest improvements)
+fixit --improve
 
 # Skip confirmation (dangerous!)
-cli-assistant --no-confirm
+fixit --no-confirm
 
 # Manually specify command and error
-cli-assistant --last-cmd "ls /bad" --last-exit 2 --stderr "No such file"
+fixit --last-cmd "ls /bad" --last-exit 2 --stderr "No such file"
 ```
 
 ## How It Works
@@ -219,7 +288,7 @@ $ fix
 
 ## Troubleshooting
 
-### Command not found: cli-assistant
+### Command not found: fixit
 
 Make sure `~/.local/bin` is in your PATH:
 

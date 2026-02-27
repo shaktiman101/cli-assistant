@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# CLI Assistant (Rust) Installer
+# Fixit Installer
 
 set -e
 
-echo "🔧 Installing CLI Assistant (Rust version)..."
+echo "🔧 Installing Fixit..."
 echo ""
 
 # Check for Rust/Cargo
@@ -35,8 +35,8 @@ echo "🦀 Building Rust binary (this may take a few minutes)..."
 cargo build --release
 
 # Verify build succeeded
-if [ ! -f "target/release/cli-assistant" ]; then
-    echo "❌ Build failed. Binary not found at target/release/cli-assistant"
+if [ ! -f "target/release/fixit" ]; then
+    echo "❌ Build failed. Binary not found at target/release/fixit"
     exit 1
 fi
 
@@ -48,9 +48,9 @@ INSTALL_BIN_DIR="$HOME/.local/bin"
 mkdir -p "$INSTALL_BIN_DIR"
 
 echo "📦 Installing binary..."
-cp target/release/cli-assistant "$INSTALL_BIN_DIR/"
-chmod +x "$INSTALL_BIN_DIR/cli-assistant"
-echo "✓ Installed to $INSTALL_BIN_DIR/cli-assistant"
+cp target/release/fixit "$INSTALL_BIN_DIR/"
+chmod +x "$INSTALL_BIN_DIR/fixit"
+echo "✓ Installed to $INSTALL_BIN_DIR/fixit"
 echo ""
 
 # Check if ~/.local/bin is in PATH
@@ -62,17 +62,17 @@ if [[ ":$PATH:" != *":$INSTALL_BIN_DIR:"* ]]; then
 fi
 
 # Add shell integration
-INTEGRATION_LINE="source $HOME/.local/cli-assistant/shell_integration.sh"
-INTEGRATION_DIR="$HOME/.local/cli-assistant"
+INTEGRATION_LINE="source $HOME/.local/fixit/shell_integration.sh"
+INTEGRATION_DIR="$HOME/.local/fixit"
 
 mkdir -p "$INTEGRATION_DIR"
 cp shell_integration.sh "$INTEGRATION_DIR/"
 
-if grep -q "cli-assistant/shell_integration.sh" "$SHELL_CONFIG" 2>/dev/null; then
+if grep -q "fixit/shell_integration.sh" "$SHELL_CONFIG" 2>/dev/null; then
     echo "✓ Shell integration already present in $SHELL_CONFIG"
 else
     echo "" >> "$SHELL_CONFIG"
-    echo "# CLI Assistant" >> "$SHELL_CONFIG"
+    echo "# Fixit" >> "$SHELL_CONFIG"
     echo "$INTEGRATION_LINE" >> "$SHELL_CONFIG"
     echo "✓ Added shell integration to $SHELL_CONFIG"
 fi
@@ -86,7 +86,7 @@ echo "Set your OpenAI API key:"
 echo "  export OPENAI_API_KEY='sk-...'"
 echo ""
 echo "(Optional) Set a different model (default: gpt-4o):"
-echo "  export CLI_ASSISTANT_MODEL='gpt-3.5-turbo'"
+echo "  export FIXIT_MODEL='gpt-3.5-turbo'"
 echo ""
 echo "Add to $SHELL_CONFIG to make it permanent:"
 echo "  echo 'export OPENAI_API_KEY=\"sk-...\"' >> $SHELL_CONFIG"
@@ -94,8 +94,8 @@ echo ""
 echo "To start using:"
 echo "  1. Reload your shell: source $SHELL_CONFIG"
 echo "  2. Try it: ls /nonexistent"
-echo "  3. Then run: fix"
+echo "  3. Then run: fixit"
 echo ""
-echo "📊 Binary size: $(du -h "$INSTALL_BIN_DIR/cli-assistant" | cut -f1)"
-echo "🚀 Enjoy your fast CLI assistant!"
+echo "📊 Binary size: $(du -h "$INSTALL_BIN_DIR/fixit" | cut -f1)"
+echo "🚀 Enjoy Fixit!"
 echo ""

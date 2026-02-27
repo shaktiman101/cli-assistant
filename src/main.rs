@@ -17,13 +17,13 @@ use display::{show_complete_suggestion, show_error, show_info};
 use executor::execute_with_confirmation;
 use openai::OpenAIClient;
 use parser::parse_response;
-use prompt::create_prompt;
+use prompt::{create_prompt, AssistantMode};
 use shell::{CommandContext, ShellInfo};
 
 /// AI-powered command-line assistant
 #[derive(Parser)]
-#[command(name = "cli-assistant")]
-#[command(about = "AI-powered CLI assistant that fixes commands and explains errors", long_about = None)]
+#[command(name = "fixit")]
+#[command(about = "AI-powered CLI assistant that fixes, explains, and improves commands", long_about = None)]
 #[command(version)]
 struct Cli {
     /// The command that was executed
@@ -41,6 +41,14 @@ struct Cli {
     /// Skip confirmation before executing
     #[arg(long)]
     no_confirm: bool,
+
+    /// Force explain mode (just explain, don't execute)
+    #[arg(long)]
+    explain: bool,
+
+    /// Force improve mode (suggest improvements)
+    #[arg(long)]
+    improve: bool,
 
     /// Additional context from user
     #[arg(trailing_var_arg = true)]
@@ -77,8 +85,17 @@ fn run() -> Result<()> {
     let shell_info = ShellInfo::capture()
         .context("Failed to capture shell information")?;
 
+    // Determine mode override from flags
+    let mode_override = if cli.explain {
+        Some(AssistantMode::Explain)
+    } else if cli.improve {
+        Some(AssistantMode::Improve)
+    } else {
+        None
+    };
+
     // Create prompt
-    let prompt_text = create_prompt(&context, &shell_info);
+    let prompt_text = create_prompt(&context, &shell_info, mode_override);
 
     // Create OpenAI client
     let client = OpenAIClient::new(
@@ -97,14 +114,23 @@ fn run() -> Result<()> {
         .context("Failed to parse LLM response")?;
 
     // Display suggestion
-    show_complete_suggestion(
-        Some(&context.command),
-        &parsed.explanation,
-        &parsed.command,
-    );
+    if parsed.is_explanation_only {
+        // For explanation-only mode, show different UI
+        show_complete_suggestion(
+            Some(&context.command),
+            &parsed.explanation,
+            None, // No suggested command
+        );
+    } else {
+        show_complete_suggestion(
+            Some(&context.command),
+            &parsed.explanation,
+            Some(&parsed.command),
+        );
 
-    // Execute command
-    execute_with_confirmation(&parsed.command, cli.no_confirm)?;
+        // Execute command only if not explanation-only
+        execute_with_confirmation(&parsed.command, cli.no_confirm)?;
+    }
 
     Ok(())
 }
