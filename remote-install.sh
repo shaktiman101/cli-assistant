@@ -29,16 +29,18 @@ if ! command -v cargo &> /dev/null; then
     exit 1
 fi
 
-# Detect user's shell
-# Priority: 1) Current shell environment 2) Default shell from $SHELL
+# Detect user's default shell
+# Priority: 1) User's login shell ($SHELL) 2) Current shell environment
 SHELL_CONFIG=""
 SHELL_NAME=""
 
-# First, check if we're currently running in zsh or bash
-if [ -n "$ZSH_VERSION" ]; then
+# First, check the user's actual login shell from $SHELL
+USER_SHELL=$(basename "$SHELL" 2>/dev/null || echo "")
+
+if [[ "$USER_SHELL" == "zsh" ]]; then
     SHELL_CONFIG="$HOME/.zshrc"
     SHELL_NAME="zsh"
-elif [ -n "$BASH_VERSION" ]; then
+elif [[ "$USER_SHELL" == "bash" ]]; then
     # On macOS, use .bash_profile if .bashrc doesn't exist
     if [[ "$OSTYPE" == "darwin"* ]] && [[ ! -f "$HOME/.bashrc" ]]; then
         SHELL_CONFIG="$HOME/.bash_profile"
@@ -46,27 +48,25 @@ elif [ -n "$BASH_VERSION" ]; then
         SHELL_CONFIG="$HOME/.bashrc"
     fi
     SHELL_NAME="bash"
-else
-    # Fallback: detect from $SHELL environment variable
-    USER_SHELL=$(basename "$SHELL" 2>/dev/null || echo "bash")
-
-    if [[ "$USER_SHELL" == "zsh" ]]; then
-        SHELL_CONFIG="$HOME/.zshrc"
-        SHELL_NAME="zsh"
-    elif [[ "$USER_SHELL" == "bash" ]]; then
-        if [[ "$OSTYPE" == "darwin"* ]] && [[ ! -f "$HOME/.bashrc" ]]; then
-            SHELL_CONFIG="$HOME/.bash_profile"
-        else
-            SHELL_CONFIG="$HOME/.bashrc"
-        fi
-        SHELL_NAME="bash"
+elif [ -n "$ZSH_VERSION" ]; then
+    # Fall back to checking which shell is running this script
+    SHELL_CONFIG="$HOME/.zshrc"
+    SHELL_NAME="zsh"
+elif [ -n "$BASH_VERSION" ]; then
+    # Fall back to bash if that's what's executing the script
+    if [[ "$OSTYPE" == "darwin"* ]] && [[ ! -f "$HOME/.bashrc" ]]; then
+        SHELL_CONFIG="$HOME/.bash_profile"
     else
-        echo "⚠️  Could not detect shell. Defaulting to bash."
         SHELL_CONFIG="$HOME/.bashrc"
-        SHELL_NAME="bash"
-        echo "   If you use zsh, manually add to ~/.zshrc:"
-        echo "   source ~/.local/fixit/shell_integration.sh"
     fi
+    SHELL_NAME="bash"
+else
+    # Last resort: default to bash
+    echo "⚠️  Could not detect shell. Defaulting to bash."
+    SHELL_CONFIG="$HOME/.bashrc"
+    SHELL_NAME="bash"
+    echo "   If you use zsh, manually add to ~/.zshrc:"
+    echo "   source ~/.local/fixit/shell_integration.sh"
 fi
 
 echo "📍 Detected shell: $SHELL_NAME"

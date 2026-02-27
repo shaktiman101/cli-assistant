@@ -13,9 +13,13 @@ if ! command -v cargo &> /dev/null; then
     exit 1
 fi
 
-# Detect user's default shell (not the shell running this script)
+# Detect user's default shell
+# Priority: 1) User's login shell ($SHELL) 2) Current shell environment
 SHELL_CONFIG=""
-USER_SHELL=$(basename "$SHELL")
+SHELL_NAME=""
+
+# First, check the user's actual login shell from $SHELL
+USER_SHELL=$(basename "$SHELL" 2>/dev/null || echo "")
 
 if [[ "$USER_SHELL" == "zsh" ]]; then
     SHELL_CONFIG="$HOME/.zshrc"
@@ -28,7 +32,20 @@ elif [[ "$USER_SHELL" == "bash" ]]; then
         SHELL_CONFIG="$HOME/.bashrc"
     fi
     SHELL_NAME="bash"
+elif [ -n "$ZSH_VERSION" ]; then
+    # Fall back to checking which shell is running this script
+    SHELL_CONFIG="$HOME/.zshrc"
+    SHELL_NAME="zsh"
+elif [ -n "$BASH_VERSION" ]; then
+    # Fall back to bash if that's what's executing the script
+    if [[ "$OSTYPE" == "darwin"* ]] && [[ ! -f "$HOME/.bashrc" ]]; then
+        SHELL_CONFIG="$HOME/.bash_profile"
+    else
+        SHELL_CONFIG="$HOME/.bashrc"
+    fi
+    SHELL_NAME="bash"
 else
+    # Last resort: default to bash
     echo "⚠️  Could not detect shell. Defaulting to bash."
     SHELL_CONFIG="$HOME/.bashrc"
     SHELL_NAME="bash"
