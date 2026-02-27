@@ -13,17 +13,27 @@ if ! command -v cargo &> /dev/null; then
     exit 1
 fi
 
-# Detect shell
+# Detect user's default shell (not the shell running this script)
 SHELL_CONFIG=""
-if [ -n "$ZSH_VERSION" ]; then
+USER_SHELL=$(basename "$SHELL")
+
+if [[ "$USER_SHELL" == "zsh" ]]; then
     SHELL_CONFIG="$HOME/.zshrc"
     SHELL_NAME="zsh"
-elif [ -n "$BASH_VERSION" ]; then
-    SHELL_CONFIG="$HOME/.bashrc"
+elif [[ "$USER_SHELL" == "bash" ]]; then
+    # On macOS, use .bash_profile if .bashrc doesn't exist
+    if [[ "$OSTYPE" == "darwin"* ]] && [[ ! -f "$HOME/.bashrc" ]]; then
+        SHELL_CONFIG="$HOME/.bash_profile"
+    else
+        SHELL_CONFIG="$HOME/.bashrc"
+    fi
     SHELL_NAME="bash"
 else
-    echo "❌ Unsupported shell. Please use bash or zsh."
-    exit 1
+    echo "⚠️  Could not detect shell. Defaulting to bash."
+    SHELL_CONFIG="$HOME/.bashrc"
+    SHELL_NAME="bash"
+    echo "   If you use zsh, manually add to ~/.zshrc:"
+    echo "   source ~/.local/fixit/shell_integration.sh"
 fi
 
 echo "📍 Detected shell: $SHELL_NAME"

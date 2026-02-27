@@ -10,7 +10,6 @@ pub struct OpenAIClient {
     client: Client,
     api_key: String,
     model: String,
-    timeout: Duration,
 }
 
 /// Message in the chat completion request
@@ -47,9 +46,6 @@ struct ChatResponse {
 #[derive(Debug, Deserialize)]
 struct ApiError {
     message: String,
-    #[serde(rename = "type")]
-    error_type: Option<String>,
-    code: Option<String>,
 }
 
 impl OpenAIClient {
@@ -64,7 +60,6 @@ impl OpenAIClient {
             client,
             api_key,
             model,
-            timeout,
         })
     }
 
